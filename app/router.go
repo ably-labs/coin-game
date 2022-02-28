@@ -30,6 +30,9 @@ func (r *Router) InitializeRoutes() http.Handler {
 	api.HandleFunc("/", panicRecover(handler.GetWalletBalance)).
 		Methods(http.MethodGet)
 
+	api.HandleFunc("/buy", panicRecover(handler.BuyBitcoin)).
+		Methods(http.MethodGet)
+
 	handler := cors.Default().Handler(api)
 	return handler
 
