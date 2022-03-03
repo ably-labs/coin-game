@@ -7,22 +7,43 @@ import { Realtime } from 'ably';
   providedIn: 'root'
 })
 export class WalletService {
+  client: Realtime = new Realtime('VbpYdQ.79UpAA:-lnejxoRLhS_hDPgNrE5XqweLrsLdH0vMZwSQtaKlLI');
 
-  constructor(private httpClient: HttpClient) { }
+  constructor(private httpClient: HttpClient) {
 
-  getWalletBalance() {
-    return this.httpClient.get(environment.gateway + '/play/');
-  }
+   }
 
   getBitcoinPrice() {
-    const ably = new Realtime('VbpYdQ.79UpAA:-lnejxoRLhS_hDPgNrE5XqweLrsLdH0vMZwSQtaKlLI');
-    const chanName = '[product:ably-coindesk/bitcoin]bitcoin:usd';
-    const channel = ably.channels.get(chanName);
-
+    let chanName = '[product:ably-coindesk/bitcoin]bitcoin:usd';
+    let channel = this.client.channels.get(chanName);
     return channel;
   }
 
-  buyBitcoin(price: number, quantity: number) {
-    return this.httpClient.get(environment.gateway + `/play/buy?price=${price}&qty=${quantity}`);
+
+  createPlayer(data: string) {
+    return this.httpClient.post(`${environment.gateway}/start`, {Name: data});
   }
+
+  getWalletBalance(player: string) {
+    return this.httpClient.get(`${environment.gateway}/balance/${player}`);
+  }
+
+  buyBitcoin(price: number, quantity: number, name: string) {
+    let data = {
+      Player: name,
+      Quantity: quantity,
+      CurrentCoinPrice: +price
+    }
+    return this.httpClient.post(`${environment.gateway}/buy`, data);
+  }
+
+  sellBitcoin(price: number, quantity: number, name: string) {
+    let data = {
+      Player: name,
+      Quantity: quantity,
+      CurrentCoinPrice: +price
+    }
+    return this.httpClient.post(`${environment.gateway}/sell`, data);
+  }
+
 }

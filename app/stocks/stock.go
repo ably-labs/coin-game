@@ -4,24 +4,40 @@ type Coin struct {
 	Price    float32
 	Quantity float32
 }
-
 type Wallet struct {
+	Name   string
 	Amount float32
 }
 
+type Player struct {
+	Name         string
+	Wallet       float32
+	CoinQuantity float32
+}
 type CoinResponse struct {
+	Player        string
 	WalletBalance float32
-	Quantity      float32
+	CoinQuantity  float32
 }
 
-func (w *Wallet) Add(amount float32) {
-	w.Amount += amount
+type BuySellRequest struct {
+	Player           string
+	CurrentCoinPrice float32
+	Quantity         float32
 }
 
-func (w *Wallet) Subtract(amount float32) {
-	w.Amount -= amount
+func (p *Player) AddBalance(amount float32) {
+	p.Wallet += amount
 }
 
-func (c *Coin) AddQuantity(quantity float32) {
-	c.Quantity += quantity
+func (p *Player) SubtractBalance(amount float32) {
+	p.Wallet -= amount
+}
+
+func (p *Player) AddQuantity(quantity float32) {
+	p.CoinQuantity += quantity
+}
+
+func (p *Player) SubtractQuantity(quantity float32) {
+	p.CoinQuantity -= quantity
 }

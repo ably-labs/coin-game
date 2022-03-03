@@ -9,10 +9,6 @@ import (
 	"github.com/rs/cors"
 )
 
-const (
-	routePrefix = "/play"
-)
-
 // Router - router struct
 type Router struct {
 	*mux.Router
@@ -25,15 +21,24 @@ func NewRouter() *Router {
 
 // InitializeRoutes ...
 func (r *Router) InitializeRoutes() http.Handler {
-	api := (*r).PathPrefix(routePrefix).Subrouter()
+	api := (*r)
 
-	api.HandleFunc("/", panicRecover(handler.GetWalletBalance)).
+	api.HandleFunc("/start", panicRecover(handler.CreatePlayer)).
+		Methods(http.MethodPost)
+
+	api.HandleFunc("/balance/{player}", panicRecover(handler.GetWalletBalance)).
 		Methods(http.MethodGet)
 
 	api.HandleFunc("/buy", panicRecover(handler.BuyBitcoin)).
-		Methods(http.MethodGet)
+		Methods(http.MethodPost)
 
-	handler := cors.Default().Handler(api)
+	api.HandleFunc("/sell", panicRecover(handler.SellBitcoin)).
+		Methods(http.MethodPost)
+
+	handler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:4200"},
+		AllowCredentials: true,
+	}).Handler(api)
 	return handler
 
 }

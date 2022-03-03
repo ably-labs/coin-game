@@ -1,4 +1,31 @@
 <div class="c-block">
-  <h2>Welcome Home!</h2>
-  <a class="btn btn-primary" routerLink="/play">Show wallet</a>
+  <h2>Welcome!</h2>
+  <div *ngIf=!start>
+    <p><a> To play, enter your name below and start </a></p>
+    Enter a name:
+    <input type="text" [(ngModel)]="playerName">
+
+    <button (click)="createPlayer()">start</button>
+    <p>Or just <a href=""> Watch </a></p>
+  </div>
+
+  <p>Current bitcoin price {{ bitcoinPrice }}</p>
+
+  <div *ngIf=start>
+    <p>Welcome: {{ portfolio.Player }}. You can buy and sell</p>
+    <p>Wallet: {{ portfolio.WalletBalance }}</p>
+    <p> Quantity: {{ portfolio.CoinQuantity }} </p>
+
+    <input type="number" name="quantity" value="1" #quantity>
+    <p></p>
+    <button (click)="buyCoin(quantity.value, playerName)"> buy </button>
+    <span>---</span>
+    <button (click)="sellCoin(quantity.value, playerName)"> sell </button>
+    <p>Total coin worth: {{ coinWorth }}</p>
+    <button (click)="reset()">Reset</button>
+  </div>
+
+  <div>
+    active stuff
+  </div>
 </div>
