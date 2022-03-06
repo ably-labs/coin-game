@@ -3,16 +3,15 @@ package handlers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"stocker/app/stocks"
 	"stocker/config"
 
+	"github.com/ably/ably-go/ably"
 	"github.com/gorilla/mux"
 	"github.com/gorilla/sessions"
-	// "github.com/ably/ably-go/ably"
 )
 
 var (
@@ -30,7 +29,7 @@ var (
 )
 
 func CreatePlayer(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("creating coin....")
+	InfoLogger.Println("Creating player...")
 	player := stocks.Player{}
 	err := json.NewDecoder(r.Body).Decode(&player)
 	player.Wallet = 700000
@@ -46,32 +45,13 @@ func CreatePlayer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(player.Name, "+n\name")
-	// err = channel.Presence.Enter(ctx, player.Name)
-	// if err != nil {
-	// 	panic(err)
-	// }
-
-	// RegisterPresense(ctx, channel, player.Name)
-	// clients, err := channel.Presence.Get(ctx)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	// fmt.Println(clients, "\n\n+++++")
-
-	// for _, client := range clients {
-	// 	fmt.Println("Present client:", client)
-	// }
-	// fmt.Println(clients, "======\nour clients")
-	w.WriteHeader(http.StatusCreated)
 }
 
 // GetWalletBalance - get current wallet balance
 func GetWalletBalance(w http.ResponseWriter, r *http.Request) {
-	log.Println("Getting wallet balance...")
+	InfoLogger.Println("Getting wallet balance...")
 	var res *stocks.CoinResponse
 	player := mux.Vars(r)["player"]
-	fmt.Println(player, "player name")
 	session, err := store.Get(r, player)
 	if err != nil {
 		return
@@ -81,12 +61,11 @@ func GetWalletBalance(w http.ResponseWriter, r *http.Request) {
 		CoinQuantity:  session.Values["quantity"].(float32),
 		WalletBalance: session.Values["balance"].(float32),
 	}
-	fmt.Println(res, "getting walltet")
 	writeResponse(res, w, r)
 }
 
 func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
-	fmt.Println("buying coin", r.Body)
+	InfoLogger.Println("Buying coin...")
 
 	buyRequest := stocks.BuySellRequest{}
 	err := json.NewDecoder(r.Body).Decode(&buyRequest)
@@ -94,10 +73,9 @@ func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	fmt.Println("player name", buyRequest.Player)
 	player, err := store.Get(r, buyRequest.Player)
 	if err != nil {
-		fmt.Println(err, "error p")
+		ErrorLogger.Println(err)
 		return
 	}
 
@@ -120,16 +98,13 @@ func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 		}
 
 		channel.Publish(ctx, "buy", res)
-
-		if err != nil {
-			panic(err)
-		}
 		// writeResponse(res, w, r)
 	}
 
 }
 
 func SellBitcoin(w http.ResponseWriter, r *http.Request) {
+	InfoLogger.Println("Selling coin...")
 	sellRequest := stocks.BuySellRequest{}
 	err := json.NewDecoder(r.Body).Decode(&sellRequest)
 	if err != nil {
@@ -172,4 +147,13 @@ func writeResponse(resValue interface{}, w http.ResponseWriter, r *http.Request)
 		ErrorLogger.Println(err)
 		http.Error(w, "Unable to write response", http.StatusInternalServerError)
 	}
+}
+
+func AblyClient() *ably.Realtime {
+	client, err := ably.NewRealtime(ably.WithKey(config.EnvVariable("API_KEY")))
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	return client
 }

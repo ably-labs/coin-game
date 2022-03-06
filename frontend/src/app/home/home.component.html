@@ -6,7 +6,6 @@
     <input type="text" [(ngModel)]="playerName">
 
     <button (click)="createPlayer()">start</button>
-    <p>Or just <a href=""> Watch </a></p>
   </div>
 
   <p>Current bitcoin price {{ bitcoinPrice }}</p>
@@ -22,10 +21,33 @@
     <span>---</span>
     <button (click)="sellCoin(quantity.value, playerName)"> sell </button>
     <p>Total coin worth: {{ coinWorth }}</p>
-    <button (click)="reset()">Reset</button>
+    <button (click)="reset()">Leave</button>
+
+    <ul *ngFor="let member of members">
+      <li>{{member.name}}</li>
+    </ul>
+
+    <table>
+      <th>User</th>
+      <th>Wallet</th>
+      <th>Quantity</th>
+      <th>Total worth</th>
+      <tr *ngFor="let data of subscriptions" >
+        <td>
+          {{data.Player}}
+        </td>
+        <td>
+          {{data.WalletBalance}}
+        </td>
+        <td>
+          {{data.CoinQuantity}}
+        </td>
+        <td>
+          {{data.CoinQuantity * bitcoinPrice}}
+        </td>
+      </tr>
+    </table>
   </div>
 
-  <div>
-    active stuff
-  </div>
+
 </div>

@@ -1,4 +1,4 @@
-import { ChangeDetectorRef, Component, OnInit} from '@angular/core';
+import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
 import { WalletService } from '../wallet.service';
 import { Realtime } from 'ably';
 
@@ -9,7 +9,10 @@ import { Realtime } from 'ably';
   styleUrls: ['./home.component.css']
 })
 export class HomeComponent implements OnInit {
-  client: Realtime = new Realtime('VbpYdQ.79UpAA:-lnejxoRLhS_hDPgNrE5XqweLrsLdH0vMZwSQtaKlLI');
+  client: Realtime = new Realtime({
+    key: 'VbpYdQ.79UpAA:-lnejxoRLhS_hDPgNrE5XqweLrsLdH0vMZwSQtaKlLI',
+    clientId: "hsyd"
+  });
 
   portfolio: any = "";
   bitcoinPrice!: number;
@@ -22,18 +25,45 @@ export class HomeComponent implements OnInit {
   channel = this.client.channels.get(this.chanName);
   view = false;
   subscriptions: any = [];
+  members: any = [];
+
 
   constructor(public cd: ChangeDetectorRef, private walletService: WalletService) {
 
   }
 
-
-
   ngOnInit() {
+    this.channel.subscribe((message) => {
+      let userData = message.data
+      const index = this.subscriptions.findIndex(((obj: { Player: any; }) => {
+        return obj.Player == userData.Player;
+      }));
+      if (index === -1) {
+        this.subscriptions.push(userData)
+      } else {
+        this.subscriptions[index] = userData
+      }
+
+      this.subscriptions.sort((a: any, b: any) => (a.WalletBalance < b.WalletBalance)? 1: -1)
+    });
+
+
+    // this.updatePresence();
+    this.channel.presence.subscribe((presence) => {
+      console.log(presence, presence.data, presence.action)
+      if (presence.action == "enter") {
+        this.members.push(presence.data)
+      } else {
+        this.members = this.members.filter((member: { name: any; }) => {
+          console.log(member.name, presence.data.name, member.name == presence.data.name)
+          return member.name != presence.data.name;
+        });
+      }
+    })
+
     this.getCurrentPrice();
     let check = localStorage.getItem("player")
     let ok = JSON.parse(`${check}`)
-    console.log(ok)
     if (ok != null) {
       this.playerName = ok.name
       this.start = ok.start
@@ -55,27 +85,17 @@ export class HomeComponent implements OnInit {
     this.walletService.getWalletBalance(name).subscribe((data) => {
       this.portfolio = data;
     });
-    this.channel.subscribe((data) => {
-      this.subscriptions.push(data.data)
-        console.log(this.subscriptions, "subscribed data")
-        this.cd.detectChanges()
-        console.log(this.subscriptions.length, "len data")
-      });
   }
 
   createPlayer(): void {
     this.start = true;
     this.walletService.createPlayer(this.playerName).subscribe(() => {
       this.getWallet(this.playerName)
-      localStorage.setItem("player", JSON.stringify({name: this.playerName, start: this.start}))
-      console.log(this.playerName, "set")
+      localStorage.setItem("player", JSON.stringify({ name: this.playerName, start: this.start }))
     })
-    this.channel.presence.enterClient(this.playerName, "playing", (err) => {
-      console.log("we're inside")
+    this.channel.presence.enter({ name: this.playerName }, (err) => {
     });
-    this.channel.presence.history((err, presenceSet) => {
-      console.log(presenceSet, "set")
-    });
+
   }
 
   buyCoin(quantity: string, name: string): void {
@@ -95,9 +115,30 @@ export class HomeComponent implements OnInit {
 
   reset(): void {
     console.log(this.playerName)
+    this.channel.presence.leave((err: any) => {
+      console.log("we're outside", err)
+    });
+    // this.updatePresence()
     this.start = false;
     localStorage.removeItem("player")
     this.playerName = ""
   }
+
+  // updatePresence() {
+  //   this.channel.presence.subscribe((presence) => {
+  //     console.log(presence, presence.data, presence.action)
+  //     if (presence.action == "enter") {
+  //       console.log("enter")
+  //       this.members.push(presence.data)
+  //     } else {
+  //       this.members = this.members.filter((member: { name: any; }) => {
+  //         console.log(member.name, presence.data.name, member.name == presence.data.name)
+  //         return member.name != presence.data.name;
+  //       });
+  //     }
+  //     console.log(this.members)
+  //   })
+  // }
+
 }
 
