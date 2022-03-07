@@ -1,53 +1,98 @@
-<div class="c-block">
-  <h2>Welcome!</h2>
-  <div *ngIf=!start>
-    <p><a> To play, enter your name below and start </a></p>
-    Enter a name:
-    <input type="text" [(ngModel)]="playerName">
-
-    <button (click)="createPlayer()">start</button>
+<div class="container">
+  <div class="welcome" *ngIf=!start>
+    <h2>Welcome!</h2>
+    <p> To play, enter your name below and click start </p>
+    <mat-form-field appearance="outline" [hideRequiredMarker]="true">
+      <mat-label>Name</mat-label>
+      <input type="text" matInput [(ngModel)]="playerName" placeholder="Enter your name">
+    </mat-form-field>
+    <button (click)="createPlayer()" mat-raised-button color="primary">Start</button>
   </div>
-
-  <p>Current bitcoin price {{ bitcoinPrice }}</p>
 
   <div *ngIf=start>
-    <p>Welcome: {{ portfolio.Player }}. You can buy and sell</p>
-    <p>Wallet: {{ portfolio.WalletBalance }}</p>
-    <p> Quantity: {{ portfolio.CoinQuantity }} </p>
+    <h1> Hello, {{ portfolio.Player }}</h1>
+    <button class="transact" mat-flat-button color="warn" (click)="reset()">Leave</button>
+    <div class="card-info">
+      <mat-card class="example-card">
+        <mat-card-title> Current Bitcoin Price</mat-card-title>
+        <mat-card-subtitle>Realtime bitcoin price</mat-card-subtitle>
+        <mat-card-content>
+          <h2>$ {{bitcoinPrice}}</h2>
+        </mat-card-content>
+      </mat-card>
 
-    <input type="number" name="quantity" value="1" #quantity>
-    <p></p>
-    <button (click)="buyCoin(quantity.value, playerName)"> buy </button>
-    <span>---</span>
-    <button (click)="sellCoin(quantity.value, playerName)"> sell </button>
-    <p>Total coin worth: {{ coinWorth }}</p>
-    <button (click)="reset()">Leave</button>
+      <mat-card class="example-card">
+        <mat-card-title>Wallet Balance </mat-card-title>
+        <mat-card-subtitle>Available balance</mat-card-subtitle>
+        <mat-card-content>
+          <h2>$ {{portfolio.WalletBalance || 0}}</h2>
+        </mat-card-content>
+      </mat-card>
 
-    <ul *ngFor="let member of members">
-      <li>{{member.name}}</li>
-    </ul>
+      <mat-card class="example-card">
+        <mat-card-title>Available Coin Quantity</mat-card-title>
+        <mat-card-subtitle>Purchased coin</mat-card-subtitle>
+        <mat-card-content>
+          <h2>{{portfolio.CoinQuantity || 0}}</h2>
+        </mat-card-content>
+      </mat-card>
 
-    <table>
-      <th>User</th>
-      <th>Wallet</th>
-      <th>Quantity</th>
-      <th>Total worth</th>
-      <tr *ngFor="let data of subscriptions" >
-        <td>
-          {{data.Player}}
-        </td>
-        <td>
-          {{data.WalletBalance}}
-        </td>
-        <td>
-          {{data.CoinQuantity}}
-        </td>
-        <td>
-          {{data.CoinQuantity * bitcoinPrice}}
-        </td>
-      </tr>
-    </table>
+      <mat-card class="example-card">
+        <mat-card-title>Total Coin Worth</mat-card-title>
+        <mat-card-subtitle>Current coin worth </mat-card-subtitle>
+        <mat-card-content>
+          <h2>$ {{ coinWorth || 0}}</h2>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    <div class="main">
+      <div [ngClass]="{'one': members.length > 0}">
+        <table class="board" *ngIf="members.length !=0">
+          <th> Players </th>
+          <tr *ngFor="let member of members">
+            <td>{{member.name}}</td>
+          </tr>
+        </table>
+      </div>
+      <div class="two">
+        <mat-form-field class="example-full-width" appearance="fill">
+          <mat-label>Quantity</mat-label>
+          <input matInput type="number" name="quantity" value="1" #quantity>
+        </mat-form-field>
+
+
+        <div>
+          <button class="transact" mat-flat-button color="primary" (click)="buyCoin(quantity.value, playerName)"> buy
+          </button>
+          <button class="transact" mat-flat-button color="primary" (click)="sellCoin(quantity.value, playerName)"> sell
+          </button>
+        </div>
+
+        <table *ngIf="subscriptions.length != 0" class="board">
+          <th>User</th>
+          <th>Wallet</th>
+          <th>Quantity</th>
+          <th>Total worth</th>
+          <tr *ngFor="let data of subscriptions">
+            <td>
+              {{data.Player}}
+            </td>
+            <td>
+              {{data.WalletBalance}}
+            </td>
+            <td>
+              {{data.CoinQuantity}}
+            </td>
+            <td>
+              {{(data.CoinQuantity * bitcoinPrice).toFixed(2)}}
+            </td>
+          </tr>
+        </table>
+      </div>
+    </div>
   </div>
+
 
 
 </div>

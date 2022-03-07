@@ -7,7 +7,13 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { HomeComponent } from './home/home.component';
 import { WalletService } from './wallet.service';
-import { WithCredentialsInterceptor } from './interceptor'
+import { WithCredentialsInterceptor } from './interceptor';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
+import { MatButtonModule} from '@angular/material/button'
+import { MatInputModule} from '@angular/material/input';
+import { MatTableModule} from '@angular/material/table';
+import {MatListModule} from '@angular/material/list';
+import { MatCardModule } from '@angular/material/card';
 @NgModule({
   declarations: [
     AppComponent,
@@ -17,7 +23,13 @@ import { WithCredentialsInterceptor } from './interceptor'
     BrowserModule,
     AppRoutingModule,
     HttpClientModule,
-    FormsModule
+    FormsModule,
+    BrowserAnimationsModule,
+    MatButtonModule,
+    MatInputModule,
+    MatTableModule,
+    MatListModule,
+    MatCardModule
   ],
   providers: [WalletService,
   {

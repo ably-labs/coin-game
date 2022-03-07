@@ -43,8 +43,7 @@ export class HomeComponent implements OnInit {
       } else {
         this.subscriptions[index] = userData
       }
-
-      this.subscriptions.sort((a: any, b: any) => (a.WalletBalance < b.WalletBalance)? 1: -1)
+      this.subscriptions.sort((a: any, b: any) => (a.WalletBalance < b.WalletBalance) ? 1 : -1)
     });
 
 
@@ -58,6 +57,12 @@ export class HomeComponent implements OnInit {
           console.log(member.name, presence.data.name, member.name == presence.data.name)
           return member.name != presence.data.name;
         });
+        this.subscriptions = this.subscriptions.filter((member: { Player: any; }) => {
+          console.log(member.Player, member.Player, member.Player == presence.data.name)
+          return member.Player != presence.data.name;
+        })
+        console.log("after sub")
+
       }
     })
 
@@ -99,14 +104,12 @@ export class HomeComponent implements OnInit {
   }
 
   buyCoin(quantity: string, name: string): void {
-    console.log(this.bitcoinPrice, quantity)
     this.walletService.buyBitcoin(this.bitcoinPrice, +quantity, name).subscribe((response) => {
       this.getWallet(name)
     });
   }
 
   sellCoin(quantity: string, name: string): void {
-    console.log(this.bitcoinPrice, quantity)
     this.walletService.sellBitcoin(this.bitcoinPrice, +quantity, name).subscribe((response) => {
       this.getWallet(name)
     });
@@ -118,27 +121,10 @@ export class HomeComponent implements OnInit {
     this.channel.presence.leave((err: any) => {
       console.log("we're outside", err)
     });
-    // this.updatePresence()
     this.start = false;
     localStorage.removeItem("player")
     this.playerName = ""
   }
-
-  // updatePresence() {
-  //   this.channel.presence.subscribe((presence) => {
-  //     console.log(presence, presence.data, presence.action)
-  //     if (presence.action == "enter") {
-  //       console.log("enter")
-  //       this.members.push(presence.data)
-  //     } else {
-  //       this.members = this.members.filter((member: { name: any; }) => {
-  //         console.log(member.name, presence.data.name, member.name == presence.data.name)
-  //         return member.name != presence.data.name;
-  //       });
-  //     }
-  //     console.log(this.members)
-  //   })
-  // }
 
 }
 
