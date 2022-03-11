@@ -1,15 +1,15 @@
 <div class="container">
-  <div class="welcome" *ngIf=!start>
+  <div class="welcome" *ngIf=!enter>
     <h2>Welcome!</h2>
-    <p> To play, enter your name below and click start </p>
+    <p> Enter your name below to join </p>
     <mat-form-field appearance="outline" [hideRequiredMarker]="true">
       <mat-label>Name</mat-label>
       <input type="text" matInput [(ngModel)]="playerName" placeholder="Enter your name">
     </mat-form-field>
-    <button (click)="createPlayer()" mat-raised-button color="primary">Start</button>
+    <button (click)="createPlayer(playerName)" mat-raised-button color="primary">Join</button>
   </div>
 
-  <div *ngIf=start>
+  <div *ngIf=enter>
     <h1> Hello, {{ portfolio.Player }}</h1>
     <button class="transact" mat-flat-button color="warn" (click)="reset()">Leave</button>
     <div class="card-info">
@@ -46,6 +46,12 @@
       </mat-card>
     </div>
 
+    <div>
+      <button class="transact" [disabled]="start" mat-flat-button color="accent" (click)="startGame()"> Start
+      </button>
+      <h4>Time left: {{timer | timer}}</h4>
+    </div>
+
     <div class="main">
       <div [ngClass]="{'one': members.length > 0}">
         <table class="board" *ngIf="members.length !=0">
@@ -63,17 +69,17 @@
 
 
         <div>
-          <button class="transact" mat-flat-button color="primary" (click)="buyCoin(quantity.value, playerName)"> buy
+          <button class="transact" [disabled]="!start" mat-flat-button color="primary" (click)="buyCoin(quantity.value, playerName)"> Buy
           </button>
-          <button class="transact" mat-flat-button color="primary" (click)="sellCoin(quantity.value, playerName)"> sell
+          <button class="transact" [disabled]="!start" mat-flat-button color="primary" (click)="sellCoin(quantity.value, playerName)"> Sell
           </button>
         </div>
 
-        <table *ngIf="subscriptions.length != 0" class="board">
+        <table *ngIf="subscriptions.length" class="board">
           <th>User</th>
           <th>Wallet</th>
           <th>Quantity</th>
-          <th>Total worth</th>
+          <th>Total coin worth</th>
           <tr *ngFor="let data of subscriptions">
             <td>
               {{data.Player}}
@@ -92,7 +98,5 @@
       </div>
     </div>
   </div>
-
-
 
 </div>

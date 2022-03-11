@@ -10,27 +10,6 @@
   height: 500px;
   width:100%;
 }
-.board {
-  border-collapse: collapse;
-  width: 80%;
-  margin-bottom: 20px;
-}
-.board td, .table th {
-  border: 1px solid #ddd;
-  padding: 8px;
-}
-
-.board tr:nth-child(even) {
-  background-color: #f2f2f2;
-}
-
-.board th {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  text-align: left;
-  background-color: #a58ab4;
-  color: white;
-}
 
 .transact {
   margin-right: 10px;

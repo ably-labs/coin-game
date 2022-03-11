@@ -1,0 +1,27 @@
+<h1 mat-dialog-title>Time up!</h1>
+<div mat-dialog-content  *ngIf="data.result.length != 0">
+  <h4>Player Rank</h4>
+  <table class="board">
+    <th>Player</th>
+    <th>Wallet</th>
+    <th>Quantity</th>
+    <th>Total</th>
+    <tr *ngFor="let sub of data.result">
+      <td>
+        {{ sub.Player}}
+      </td>
+      <td>
+        {{ sub.WalletBalance.toFixed(2)}}
+      </td>
+      <td>
+        {{ sub.CoinQuantity}}
+      </td>
+      <td>
+        {{ ((sub.CoinQuantity * data.price) + sub.WalletBalance).toFixed(2) }}
+      </td>
+    </tr>
+  </table>
+</div>
+<div mat-dialog-actions>
+  <button mat-flat-button color="accent" mat-dialog-close >Play again</button>
+</div>

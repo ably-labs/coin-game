@@ -1,7 +1,8 @@
-import { ChangeDetectorRef, Component, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, NgZone, OnInit } from '@angular/core';
 import { WalletService } from '../wallet.service';
-import { Realtime } from 'ably';
-
+import { Realtime, Types } from 'ably';
+import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
+import { BoardModalComponent } from '../board-modal/board-modal.component';
 
 @Component({
   selector: 'app-home',
@@ -10,73 +11,68 @@ import { Realtime } from 'ably';
 })
 export class HomeComponent implements OnInit {
   client: Realtime = new Realtime({
-    key: 'VbpYdQ.79UpAA:-lnejxoRLhS_hDPgNrE5XqweLrsLdH0vMZwSQtaKlLI',
+    key: 'yz088w.guVwmQ:LGn2Ebd2SAhVApwmxb3UnZiCtH3dH-0FEj7VTxGqyHY',
     clientId: "hsyd"
   });
 
   portfolio: any = "";
   bitcoinPrice!: number;
-  playerName: any = "";
+  playerName: string = "";
   player: any = "";
   coinWorth!: number;
   quantity: number = 0;
-  start: boolean = false;
+  enter: boolean = false;
   chanName = "stock";
   channel = this.client.channels.get(this.chanName);
   view = false;
   subscriptions: any = [];
   members: any = [];
+  timer: string = "30"
+  start: boolean = false;
 
 
-  constructor(public cd: ChangeDetectorRef, private walletService: WalletService) {
+  constructor(public cd: ChangeDetectorRef, private walletService: WalletService,
+    private dialog: MatDialog, public zone: NgZone) {
 
   }
 
   ngOnInit() {
-    this.channel.subscribe((message) => {
-      let userData = message.data
-      const index = this.subscriptions.findIndex(((obj: { Player: any; }) => {
-        return obj.Player == userData.Player;
-      }));
-      if (index === -1) {
-        this.subscriptions.push(userData)
-      } else {
-        this.subscriptions[index] = userData
-      }
-      this.subscriptions.sort((a: any, b: any) => (a.WalletBalance < b.WalletBalance) ? 1 : -1)
+    this.getCurrentPrice();
+
+    this.channel.subscribe("buy", (message) => {
+      this.processTransaction(message)
     });
 
+    this.channel.subscribe("sell", (message) => {
+      this.processTransaction(message)
+    });
 
-    // this.updatePresence();
-    this.channel.presence.subscribe((presence) => {
-      console.log(presence, presence.data, presence.action)
-      if (presence.action == "enter") {
-        this.members.push(presence.data)
-      } else {
-        this.members = this.members.filter((member: { name: any; }) => {
-          console.log(member.name, presence.data.name, member.name == presence.data.name)
-          return member.name != presence.data.name;
-        });
-        this.subscriptions = this.subscriptions.filter((member: { Player: any; }) => {
-          console.log(member.Player, member.Player, member.Player == presence.data.name)
-          return member.Player != presence.data.name;
-        })
-        console.log("after sub")
-
-      }
+    this.channel.presence.subscribe("enter", (presence) => {
+      this.enterPresence(presence)
     })
 
-    this.getCurrentPrice();
-    let check = localStorage.getItem("player")
-    let ok = JSON.parse(`${check}`)
-    if (ok != null) {
-      this.playerName = ok.name
-      this.start = ok.start
-    }
-    if (this.start == true) {
-      this.getWallet(this.playerName)
-    }
+    this.channel.presence.subscribe("leave", (presence) => {
+      this.leavePresence(presence)
+    })
+
+    this.channel.subscribe('start', (message) => this.zone.run(() => {
+      this.start = true;
+    }))
+
+    this.channel.subscribe('end', (message) => this.zone.run(() => {
+      if (this.enter) {
+        this.openDialog()
+        this.reset()
+      }
+      this.start = false;
+      this.timer = message.data
+    }))
+
+    this.channel.subscribe('time', (message) => {
+      this.timer = message.data
+    })
   }
+
 
   getCurrentPrice(): void {
     this.walletService.getBitcoinPrice().subscribe((data) => {
@@ -92,15 +88,13 @@ export class HomeComponent implements OnInit {
     });
   }
 
-  createPlayer(): void {
-    this.start = true;
-    this.walletService.createPlayer(this.playerName).subscribe(() => {
-      this.getWallet(this.playerName)
-      localStorage.setItem("player", JSON.stringify({ name: this.playerName, start: this.start }))
+  createPlayer(name: string): void {
+    this.enter = true;
+    this.walletService.createPlayer(name).subscribe(() => {
+      this.getWallet(name)
     })
-    this.channel.presence.enter({ name: this.playerName }, (err) => {
+    this.channel.presence.enter({ name: name }, (err) => {
     });
-
   }
 
   buyCoin(quantity: string, name: string): void {
@@ -117,14 +111,85 @@ export class HomeComponent implements OnInit {
   }
 
   reset(): void {
-    console.log(this.playerName)
     this.channel.presence.leave((err: any) => {
-      console.log("we're outside", err)
     });
-    this.start = false;
-    localStorage.removeItem("player")
+    this.enter = false;
     this.playerName = ""
   }
 
-}
+  openDialog() {
+    const dialogConfig = new MatDialogConfig();
 
+    let dialogRef = this.dialog.open(BoardModalComponent, {
+      data: {
+        result: this.subscriptions.sort((a: any, b: any) => (a.WalletBalance < b.WalletBalance) ? 1 : -1),
+        price: this.bitcoinPrice
+      }
+    });
+
+    dialogRef.afterClosed().subscribe(data => {
+      this.reset()
+    })
+  }
+
+  countdown(time: string) {
+    let timeNum = +time
+    const interval = setInterval(() => {
+      timeNum -= 1
+      this.channel.publish("time", `${timeNum}`, (err) => {
+        if (err) {
+          console.log("error")
+        }
+    })
+      if (+this.timer <= 0) {
+        this.channel.publish("end", '30', (err) => {
+          if (err) {
+            console.log("error")
+          }
+      })
+        clearInterval(interval)
+        return
+      }
+
+    }, 1000)
+  }
+
+  startGame() {
+    let data = {
+      name: this.playerName,
+      time: this.timer
+    }
+    this.channel.publish("start", data, (err) => {
+      if (err) {
+        console.log("error")
+      }
+    })
+    this.countdown(this.timer)
+  }
+
+  processTransaction(message: Types.Message) {
+    let userData = message.data
+    const index = this.subscriptions.findIndex(((obj: { Player: any; }) => {
+      return obj.Player == userData.Player;
+    }));
+    if (index === -1) {
+      this.subscriptions.push(userData)
+    } else {
+      this.subscriptions[index] = userData
+    }
+  }
+
+  enterPresence(presence: Types.PresenceMessage) {
+    this.members.push(presence.data)
+  }
+
+  leavePresence(presence: Types.PresenceMessage) {
+    this.members = this.members.filter((member: { name: any; }) => {
+      return member.name != presence.data.name;
+    });
+    this.subscriptions = this.subscriptions.filter((member: { Player: any; }) => {
+      return member.Player != presence.data.name;
+    })
+  }
+
+}

@@ -14,10 +14,16 @@ import { MatInputModule} from '@angular/material/input';
 import { MatTableModule} from '@angular/material/table';
 import {MatListModule} from '@angular/material/list';
 import { MatCardModule } from '@angular/material/card';
+import { MatDialogModule } from '@angular/material/dialog';
+import { BoardModalComponent } from './board-modal/board-modal.component';
+import { TimerPipe } from './timer.pipe';
+
 @NgModule({
   declarations: [
     AppComponent,
     HomeComponent,
+    BoardModalComponent,
+    TimerPipe,
   ],
   imports: [
     BrowserModule,
@@ -29,7 +35,8 @@ import { MatCardModule } from '@angular/material/card';
     MatInputModule,
     MatTableModule,
     MatListModule,
-    MatCardModule
+    MatCardModule,
+    MatDialogModule
   ],
   providers: [WalletService,
   {
