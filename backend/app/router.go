@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	handler "stocker/app/handlers"
+	"stocker/config"
 
 	"github.com/gorilla/mux"
 	"github.com/rs/cors"
@@ -36,7 +37,7 @@ func (r *Router) InitializeRoutes() http.Handler {
 		Methods(http.MethodPost)
 
 	handler := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:4200"},
+		AllowedOrigins:   []string{config.EnvVariable("FRONTEND")},
 		AllowCredentials: true,
 	}).Handler(api)
 	return handler

@@ -3,7 +3,7 @@
 # Created by https://www.toptal.com/developers/gitignore/api/visualstudiocode,macos,angular,go
 # Edit at https://www.toptal.com/developers/gitignore?templates=visualstudiocode,macos,angular,go
 
-.env
+**/.env
 ### Angular ###
 ## Angular ##
 # compiled output
@@ -11,8 +11,8 @@
 /frontend/tmp/
 /frontend/app/**/*.js
 /frontend/app/**/*.js.map
-/frontend//out-tsc
-/frontend//bazel-out
+/frontend/out-tsc
+/frontend/bazel-out
 
 # dependencies
 /frontend/node_modules/
