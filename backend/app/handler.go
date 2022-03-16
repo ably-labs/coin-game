@@ -1,22 +1,19 @@
-package handlers
+package app
 
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
-	"stocker/app/stocks"
 	"stocker/config"
 
 	"github.com/ably/ably-go/ably"
 	"github.com/gorilla/mux"
-	"github.com/gorilla/sessions"
 )
 
 var (
-	key     = []byte(config.EnvVariable("SECRET"))
-	store   = sessions.NewCookieStore(key)
 	channel = AblyClient().Channels.Get("stock")
 	ctx     = context.Background()
 
@@ -30,7 +27,7 @@ var (
 
 func CreatePlayer(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Creating player...")
-	player := stocks.Player{}
+	player := Player{}
 	err := json.NewDecoder(r.Body).Decode(&player)
 	player.Wallet = 700000
 	if err != nil {
@@ -41,22 +38,31 @@ func CreatePlayer(w http.ResponseWriter, r *http.Request) {
 	session.Values["balance"] = player.Wallet
 	session.Values["quantity"] = player.CoinQuantity
 	err = session.Save(r, w)
+	fmt.Println(session, "saved++++++++++++++++++")
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	res := &CoinResponse{
+		Player:        player.Name,
+		CoinQuantity:  session.Values["quantity"].(float32),
+		WalletBalance: session.Values["balance"].(float32),
+	}
+	writeResponse(res, w, r)
 }
 
 // GetWalletBalance - get current wallet balance
 func GetWalletBalance(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Getting wallet balance...")
-	var res *stocks.CoinResponse
+	var res *CoinResponse
 	player := mux.Vars(r)["player"]
 	session, err := store.Get(r, player)
 	if err != nil {
+		fmt.Println(err, "error")
 		return
 	}
-	res = &stocks.CoinResponse{
+	fmt.Println(session)
+	res = &CoinResponse{
 		Player:        player,
 		CoinQuantity:  session.Values["quantity"].(float32),
 		WalletBalance: session.Values["balance"].(float32),
@@ -67,7 +73,7 @@ func GetWalletBalance(w http.ResponseWriter, r *http.Request) {
 func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Buying coin...")
 
-	buyRequest := stocks.BuySellRequest{}
+	buyRequest := BuySellRequest{}
 	err := json.NewDecoder(r.Body).Decode(&buyRequest)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -91,7 +97,7 @@ func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 		player.Values["quantity"] = playerQuantity + buyRequest.Quantity
 		player.Save(r, w)
 
-		res := &stocks.CoinResponse{
+		res := &CoinResponse{
 			Player:        buyRequest.Player,
 			CoinQuantity:  player.Values["quantity"].(float32),
 			WalletBalance: player.Values["balance"].(float32),
@@ -105,7 +111,7 @@ func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 
 func SellBitcoin(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Selling coin...")
-	sellRequest := stocks.BuySellRequest{}
+	sellRequest := BuySellRequest{}
 	err := json.NewDecoder(r.Body).Decode(&sellRequest)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
@@ -124,7 +130,7 @@ func SellBitcoin(w http.ResponseWriter, r *http.Request) {
 		player.Values["quantity"] = playerQuantity - sellRequest.Quantity
 		player.Save(r, w)
 
-		res := &stocks.CoinResponse{
+		res := &CoinResponse{
 			Player:        sellRequest.Player,
 			CoinQuantity:  player.Values["quantity"].(float32),
 			WalletBalance: player.Values["balance"].(float32),

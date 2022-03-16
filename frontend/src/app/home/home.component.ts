@@ -90,9 +90,10 @@ export class HomeComponent implements OnInit {
 
   createPlayer(name: string): void {
     this.enter = true;
-    this.walletService.createPlayer(name).subscribe(() => {
-      this.getWallet(name)
+    this.walletService.createPlayer(name).subscribe((data) => {
+      this.portfolio = data;
     })
+    console.log("HI again")
     this.channel.presence.enter({ name: name }, (err) => {
     });
   }

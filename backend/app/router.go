@@ -3,12 +3,15 @@ package app
 import (
 	"encoding/json"
 	"net/http"
-	handler "stocker/app/handlers"
 	"stocker/config"
 
 	"github.com/gorilla/mux"
+	"github.com/gorilla/sessions"
+	"github.com/pkg/errors"
 	"github.com/rs/cors"
 )
+
+var store sessions.Store
 
 // Router - router struct
 type Router struct {
@@ -23,17 +26,25 @@ func NewRouter() *Router {
 // InitializeRoutes ...
 func (r *Router) InitializeRoutes() http.Handler {
 	api := (*r)
+	encryptionKey, err := determineEncryptionKey()
+	if err != nil {
+		ErrorLogger.Println(err)
+	}
+	store = sessions.NewCookieStore(
+		[]byte(config.EnvVariable("SECRET")),
+		encryptionKey,
+	)
 
-	api.HandleFunc("/start", panicRecover(handler.CreatePlayer)).
+	api.HandleFunc("/start", panicRecover(CreatePlayer)).
 		Methods(http.MethodPost)
 
-	api.HandleFunc("/balance/{player}", panicRecover(handler.GetWalletBalance)).
+	api.HandleFunc("/balance/{player}", panicRecover(GetWalletBalance)).
 		Methods(http.MethodGet)
 
-	api.HandleFunc("/buy", panicRecover(handler.BuyBitcoin)).
+	api.HandleFunc("/buy", panicRecover(BuyBitcoin)).
 		Methods(http.MethodPost)
 
-	api.HandleFunc("/sell", panicRecover(handler.SellBitcoin)).
+	api.HandleFunc("/sell", panicRecover(SellBitcoin)).
 		Methods(http.MethodPost)
 
 	handler := cors.New(cors.Options{
@@ -50,7 +61,7 @@ func panicRecover(restart func(w http.ResponseWriter, r *http.Request)) func(w h
 		defer func() {
 			err := recover()
 			if err != nil {
-				handler.ErrorLogger.Println(err)
+				ErrorLogger.Println(err)
 				jsonBody, _ := json.Marshal(map[string]string{
 					"error": "There was an internal server error",
 				})
@@ -60,4 +71,20 @@ func panicRecover(restart func(w http.ResponseWriter, r *http.Request)) func(w h
 		}()
 		restart(w, r)
 	}
+}
+
+func determineEncryptionKey() ([]byte, error) {
+	sek := config.EnvVariable("ENCRYPTION_KEY")
+	lek := len(sek)
+	switch {
+	case lek >= 0 && lek < 16, lek > 16 && lek < 24, lek > 24 && lek < 32:
+		return nil, errors.Errorf("SESSION_ENCRYPTION_KEY needs to be either 16, 24 or 32 characters long or longer, was: %d", lek)
+	case lek == 16, lek == 24, lek == 32:
+		return []byte(sek), nil
+	case lek > 32:
+		return []byte(sek[0:32]), nil
+	default:
+		return nil, errors.New("invalid SESSION_ENCRYPTION_KEY: " + sek)
+	}
+
 }

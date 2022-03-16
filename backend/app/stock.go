@@ -1,4 +1,4 @@
-package stocks
+package app
 
 type Player struct {
 	Name         string
