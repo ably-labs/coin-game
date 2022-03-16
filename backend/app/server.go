@@ -16,7 +16,6 @@ func RunServer() (err error) {
 	log.Printf("Starting HTTP server on port %s", port)
 	server := NewRouter()
 	a := server.InitializeRoutes()
-	fmt.Println(port, "++")
 
 	return http.ListenAndServe(fmt.Sprintf(":%s", port), a)
 }

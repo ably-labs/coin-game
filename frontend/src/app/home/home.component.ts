@@ -3,7 +3,7 @@ import { WalletService } from '../wallet.service';
 import { Realtime, Types } from 'ably';
 import { MatDialog, MatDialogConfig } from '@angular/material/dialog';
 import { BoardModalComponent } from '../board-modal/board-modal.component';
-
+import { environment } from '../../environments/environment';
 @Component({
   selector: 'app-home',
   templateUrl: './home.component.html',
@@ -11,7 +11,7 @@ import { BoardModalComponent } from '../board-modal/board-modal.component';
 })
 export class HomeComponent implements OnInit {
   client: Realtime = new Realtime({
-    key: 'yz088w.guVwmQ:LGn2Ebd2SAhVApwmxb3UnZiCtH3dH-0FEj7VTxGqyHY',
+    key: `${environment.API_KEY}`,
     clientId: "hsyd"
   });
 

@@ -7,7 +7,7 @@ import { Realtime } from 'ably';
   providedIn: 'root'
 })
 export class WalletService {
-  client: Realtime = new Realtime('VbpYdQ.79UpAA:-lnejxoRLhS_hDPgNrE5XqweLrsLdH0vMZwSQtaKlLI');
+  client: Realtime = new Realtime(`${environment.API_KEY_COIN}`);
 
   constructor(private httpClient: HttpClient) {
 
