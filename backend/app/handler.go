@@ -3,19 +3,22 @@ package app
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"stocker/config"
 
+	"time"
+
 	"github.com/ably/ably-go/ably"
 	"github.com/gorilla/mux"
+	"github.com/patrickmn/go-cache"
 )
 
 var (
-	channel = AblyClient().Channels.Get("stock")
-	ctx     = context.Background()
+	channel    = AblyClient().Channels.Get("stock")
+	ctx        = context.Background()
+	cacheStore = cache.New(5*time.Minute, 10*time.Minute)
 
 	// WarningLogger ...
 	WarningLogger *log.Logger = log.New(os.Stdout, "WARNING: ", log.Ldate|log.Ltime|log.Lshortfile)
@@ -34,73 +37,72 @@ func CreatePlayer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	session, _ := store.Get(r, player.Name)
-	session.Values["balance"] = player.Wallet
-	session.Values["quantity"] = player.CoinQuantity
-	err = session.Save(r, w)
-	fmt.Println(session, "saved++++++++++++++++++")
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
+
+	cacheStore.Set(player.Name, &player, cache.DefaultExpiration)
+	play, found := cacheStore.Get(player.Name)
+	if found {
+		player = play.(Player)
 	}
 	res := &CoinResponse{
 		Player:        player.Name,
-		CoinQuantity:  session.Values["quantity"].(float32),
-		WalletBalance: session.Values["balance"].(float32),
+		CoinQuantity:  player.CoinQuantity,
+		WalletBalance: player.Wallet,
 	}
+
 	writeResponse(res, w, r)
 }
 
 // GetWalletBalance - get current wallet balance
 func GetWalletBalance(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Getting wallet balance...")
+	currentPlayer := Player{}
 	var res *CoinResponse
 	player := mux.Vars(r)["player"]
-	session, err := store.Get(r, player)
-	if err != nil {
-		fmt.Println(err, "error")
-		return
+
+	play, found := cacheStore.Get(player)
+	if found {
+		currentPlayer = play.(Player)
 	}
-	fmt.Println(session)
 	res = &CoinResponse{
 		Player:        player,
-		CoinQuantity:  session.Values["quantity"].(float32),
-		WalletBalance: session.Values["balance"].(float32),
+		CoinQuantity:  currentPlayer.CoinQuantity,
+		WalletBalance: currentPlayer.Wallet,
 	}
 	writeResponse(res, w, r)
 }
 
 func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Buying coin...")
-
+	currentPlayer := Player{}
 	buyRequest := BuySellRequest{}
 	err := json.NewDecoder(r.Body).Decode(&buyRequest)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	player, err := store.Get(r, buyRequest.Player)
-	if err != nil {
-		ErrorLogger.Println(err)
-		return
+
+	play, found := cacheStore.Get(buyRequest.Player)
+	if found {
+		currentPlayer = play.(Player)
 	}
 
-	playerBalance := player.Values["balance"].(float32)
-	playerQuantity := player.Values["quantity"].(float32)
+	playerBalance := currentPlayer.Wallet
+	playerQuantity := currentPlayer.CoinQuantity
 
 	totalCost := buyRequest.CurrentCoinPrice * buyRequest.Quantity
 	if totalCost > playerBalance {
 		http.Error(w, "Insufficient wallet balance", http.StatusBadRequest)
 		return
 	} else {
-		player.Values["balance"] = playerBalance - totalCost
-		player.Values["quantity"] = playerQuantity + buyRequest.Quantity
-		player.Save(r, w)
+		currentPlayer.Wallet = playerBalance - totalCost
+		currentPlayer.CoinQuantity = playerQuantity + buyRequest.Quantity
+
+		cacheStore.Set(currentPlayer.Name, currentPlayer, cache.DefaultExpiration)
 
 		res := &CoinResponse{
 			Player:        buyRequest.Player,
-			CoinQuantity:  player.Values["quantity"].(float32),
-			WalletBalance: player.Values["balance"].(float32),
+			CoinQuantity:  currentPlayer.CoinQuantity,
+			WalletBalance: currentPlayer.Wallet,
 		}
 
 		channel.Publish(ctx, "buy", res)
@@ -112,28 +114,33 @@ func BuyBitcoin(w http.ResponseWriter, r *http.Request) {
 func SellBitcoin(w http.ResponseWriter, r *http.Request) {
 	InfoLogger.Println("Selling coin...")
 	sellRequest := BuySellRequest{}
+	currentPlayer := Player{}
 	err := json.NewDecoder(r.Body).Decode(&sellRequest)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	player, _ := store.Get(r, sellRequest.Player)
-	playerBalance := player.Values["balance"].(float32)
-	playerQuantity := player.Values["quantity"].(float32)
+	play, found := cacheStore.Get(sellRequest.Player)
+	if found {
+		currentPlayer = play.(Player)
+	}
+
+	playerBalance := currentPlayer.Wallet
+	playerQuantity := currentPlayer.CoinQuantity
 
 	totalSale := sellRequest.CurrentCoinPrice * sellRequest.Quantity
 	if sellRequest.Quantity > playerQuantity {
 		http.Error(w, "You do not have enough coin", http.StatusBadRequest)
 		return
 	} else {
-		player.Values["balance"] = playerBalance + totalSale
-		player.Values["quantity"] = playerQuantity - sellRequest.Quantity
-		player.Save(r, w)
+		currentPlayer.Wallet = playerBalance + totalSale
+		currentPlayer.CoinQuantity = playerQuantity - sellRequest.Quantity
+		cacheStore.Set(currentPlayer.Name, currentPlayer, cache.DefaultExpiration)
 
 		res := &CoinResponse{
 			Player:        sellRequest.Player,
-			CoinQuantity:  player.Values["quantity"].(float32),
-			WalletBalance: player.Values["balance"].(float32),
+			CoinQuantity:  currentPlayer.CoinQuantity,
+			WalletBalance: currentPlayer.Wallet,
 		}
 		channel.Publish(ctx, "sell", res)
 		// writeResponse(res, w, r)

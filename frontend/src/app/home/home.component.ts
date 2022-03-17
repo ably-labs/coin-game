@@ -12,7 +12,7 @@ import { environment } from '../../environments/environment';
 export class HomeComponent implements OnInit {
   client: Realtime = new Realtime({
     key: `${environment.API_KEY}`,
-    clientId: "hsyd"
+    clientId: "r5ew9P"
   });
 
   portfolio: any = "";
@@ -93,7 +93,6 @@ export class HomeComponent implements OnInit {
     this.walletService.createPlayer(name).subscribe((data) => {
       this.portfolio = data;
     })
-    console.log("HI again")
     this.channel.presence.enter({ name: name }, (err) => {
     });
   }
